@@ -1,9 +1,9 @@
 {
-  "name": "FuelCheck NSW",
-  "short_name": "FuelCheck NSW",
+  "name": "FuelFinder NSW",
+  "short_name": "FuelFinder NSW",
   "description": "Real-time NSW fuel prices with your personal discounts. Powered by XDC Network.",
-  "start_url": "/XDC_FuelCheck/",
-  "scope": "/XDC_FuelCheck/",
+  "start_url": "/XDC_FuelFinderNSW/",
+  "scope": "/XDC_FuelFinderNSW/",
   "display": "standalone",
   "background_color": "#0A0A0A",
   "theme_color": "#0A0A0A",
