@@ -80,8 +80,11 @@ async function main() {
         const token = await getAccessToken();
         const data = await fetchAllFuelPrices(token);
 
+        // === FIX: Always set a fresh timestamp ===
+        const now = new Date().toISOString();
+
         const outputData = {
-            lastUpdated: new Date().toISOString(),
+            lastUpdated: now,                    // Always use current time
             stations: data.stations || [],
             prices: data.prices || []
         };
@@ -90,7 +93,9 @@ async function main() {
         fs.mkdirSync(path.dirname(outputPath), { recursive: true });
         fs.writeFileSync(outputPath, JSON.stringify(outputData, null, 2));
 
-        console.log(`Successfully saved ${outputData.prices.length} prices`);
+        console.log(`✅ Successfully saved ${outputData.prices.length} prices`);
+        console.log(`🕒 lastUpdated set to: ${now}`);
+
     } catch (error) {
         console.error('Error:', error.message);
         process.exit(1);
