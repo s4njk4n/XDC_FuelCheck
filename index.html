@@ -39,7 +39,7 @@
         
         <!-- Header -->
         <div class="pt-6 pb-5">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
                 
                 <!-- Logo + Title -->
                 <div class="flex items-center gap-3">
@@ -47,13 +47,14 @@
                         <img src="XDC_Network_Blk_Mono_Logo.jpeg" alt="XDC Network" class="h-9 w-auto hover:opacity-80 transition-opacity">
                     </a>
                     <div>
-                        <h1 class="text-3xl font-semibold tracking-tighter">FuelCheck <span class="text-xl font-normal text-zinc-400">NSW</span></h1>
+                        <h1 class="text-3xl font-semibold tracking-tighter">FuelCheck</h1>
+                        <p class="text-sm text-zinc-400 -mt-1">NSW Fuel Pricing</p>
                     </div>
                 </div>
 
                 <!-- Last Updated -->
                 <div id="lastUpdated" 
-                     class="text-xs px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400">
+                     class="text-xs px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 self-start md:self-center">
                     Loading data...
                 </div>
             </div>
