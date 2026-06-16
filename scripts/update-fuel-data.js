@@ -31,21 +31,35 @@ async function getAccessToken() {
             method: 'POST',
             headers: {
                 'Authorization': `Basic ${basicAuth}`,
-                'Content-Type': 'application/x-www-form-urlencoded'
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json'
             }
         }
     );
 
     const text = await response.text();
     console.log('Token Status:', response.status);
+    console.log('Token Raw Body Length:', text.length);
+    console.log('Token Raw Body:', text || '(empty)');
 
     if (!response.ok) {
-        console.error('Token Error Response:', text);
-        throw new Error(`Token request failed: ${response.status}`);
+        throw new Error(`Token request failed with status ${response.status}`);
     }
 
-    const data = JSON.parse(text);
-    return data.access_token;
+    if (!text || text.trim() === '') {
+        throw new Error('Token response was empty');
+    }
+
+    try {
+        const data = JSON.parse(text);
+        if (!data.access_token) {
+            throw new Error('No access_token in response');
+        }
+        return data.access_token;
+    } catch (e) {
+        console.error('Failed to parse token response:', text);
+        throw new Error('Token response was not valid JSON');
+    }
 }
 
 async function fetchAllFuelPrices(token) {
