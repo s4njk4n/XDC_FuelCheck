@@ -272,7 +272,7 @@
         // ==================== LIVE DATA ====================
         async function loadRealNSWData() {
             const status = document.getElementById('dataStatus');
-            status.textContent = 'Loading live NSW data...';
+            status.textContent = 'Getting access token...';
             status.className = 'text-xs px-3 py-1.5 rounded-full bg-blue-900 text-blue-400 border border-blue-800';
 
             const creds = getSavedCredentials();
@@ -286,11 +286,13 @@
             const basicAuth = btoa(`${creds.key}:${creds.secret}`);
 
             try {
-                // Step 1: Get OAuth Access Token
+                // === Step 1: Get OAuth Token ===
                 const tokenUrl = 'https://api.onegov.nsw.gov.au/oauth/client_credential/accesstoken?grant_type=client_credentials';
-                const tokenProxy = `https://corsproxy.io/?${encodeURIComponent(tokenUrl)}`;
+                const tokenProxyUrl = `https://corsproxy.io/?${encodeURIComponent(tokenUrl)}`;
 
-                const tokenRes = await fetch(tokenProxy, {
+                console.log('Requesting token...');
+
+                const tokenResponse = await fetch(tokenProxyUrl, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Basic ${basicAuth}`,
@@ -298,32 +300,38 @@
                     }
                 });
 
-                if (!tokenRes.ok) {
-                    throw new Error(`Token request failed: ${tokenRes.status}`);
+                if (!tokenResponse.ok) {
+                    const errorText = await tokenResponse.text();
+                    console.error('Token request failed:', tokenResponse.status, errorText);
+                    throw new Error(`Token failed with status ${tokenResponse.status}`);
                 }
 
-                const tokenData = await tokenRes.json();
+                const tokenData = await tokenResponse.json();
+                console.log('Token response:', tokenData);
+
                 const accessToken = tokenData.access_token;
 
                 if (!accessToken) {
-                    throw new Error('No access token received');
+                    throw new Error('No access_token in response');
                 }
 
-                // Step 2: Fetch fuel prices using the token
-                const apiUrl = 'https://api.onegov.nsw.gov.au/FuelPriceCheck/v1/fuel/prices';
-                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`;
+                // === Step 2: Fetch Prices ===
+                status.textContent = 'Loading live NSW data...';
+                
+                const pricesUrl = 'https://api.onegov.nsw.gov.au/FuelPriceCheck/v1/fuel/prices';
+                const pricesProxyUrl = `https://corsproxy.io/?${encodeURIComponent(pricesUrl)}`;
 
-                const res = await fetch(proxyUrl, {
+                const pricesResponse = await fetch(pricesProxyUrl, {
                     headers: {
                         'Authorization': `Bearer ${accessToken}`
                     }
                 });
 
-                if (!res.ok) {
-                    throw new Error(`Prices request failed: ${res.status}`);
+                if (!pricesResponse.ok) {
+                    throw new Error(`Prices request failed with status ${pricesResponse.status}`);
                 }
 
-                const data = await res.json();
+                const data = await pricesResponse.json();
                 const prices = data.prices || data;
 
                 stations = prices
@@ -358,15 +366,13 @@
                 }
 
             } catch (error) {
-                console.error('Failed to load live data:', error);
+                console.error('Live data error:', error);
+                status.textContent = 'Live unavailable — using sample';
+                status.className = 'text-xs px-3 py-1.5 rounded-full bg-amber-900 text-amber-400 border border-amber-800';
+                stations = [...sampleStations];
+                addMarkers();
+                updateRankedList();
             }
-
-            // Fallback
-            status.textContent = 'Live unavailable — using sample';
-            status.className = 'text-xs px-3 py-1.5 rounded-full bg-amber-900 text-amber-400 border border-amber-800';
-            stations = [...sampleStations];
-            addMarkers();
-            updateRankedList();
         }
 
 
