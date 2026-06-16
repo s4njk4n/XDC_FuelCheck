@@ -3,226 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#166534">
     <title>XDC FuelCheck • NSW</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
         
-        :root {
-            --primary: #166534;
-        }
+        body { font-family: 'Inter', system_ui, sans-serif; }
+        .title-font { font-family: 'Space Grotesk', 'Inter', sans-serif; font-weight: 600; }
         
-        body {
-            font-family: 'Inter', system_ui, sans-serif;
-        }
-        
-        .title-font {
-            font-family: 'Space Grotesk', 'Inter', sans-serif;
-            font-weight: 600;
-        }
-
-        .fuel-card {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
         .map-container {
             border-radius: 16px;
             overflow: hidden;
             box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
         }
-
+        
         .station-row {
             transition: background-color 0.1s ease;
         }
-        
         .station-row:active {
-            background-color: #f3f4f6;
-        }
-
-        @media (max-width: 768px) {
-            .map-container {
-                height: 380px !important;
-            }
+            background-color: #27251f;
         }
         
-        .leaflet-popup-content-wrapper {
-            border-radius: 12px;
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        @media (max-width: 768px) {
+            .map-container { height: 380px !important; }
         }
     </style>
 </head>
 <body class="bg-zinc-950 text-zinc-200">
-    <div class="max-w-5xl mx-auto">
+    <div class="max-w-5xl mx-auto px-4">
         <!-- Header -->
-        <div class="px-4 pt-6 pb-4 flex items-center justify-between">
+        <div class="pt-6 pb-4 flex items-center justify-between">
             <div>
                 <h1 class="text-3xl font-semibold title-font tracking-tighter">XDC FuelCheck</h1>
-                <p class="text-zinc-400 text-sm">NSW Live Fuel Prices</p>
+                <p class="text-zinc-400 text-sm">NSW Fuel Prices • With Your Discounts</p>
             </div>
-            <div id="dataStatus" 
-                 class="text-xs px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400">
-                Ready
+            <div id="lastUpdated" class="text-xs px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400">
+                Loading data...
             </div>
         </div>
 
-        <!-- API Credentials -->
-        <div class="mx-4 mb-5 bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-            <div class="flex items-center justify-between mb-4">
+        <!-- Discount Settings -->
+        <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 mb-6">
+            <h3 class="font-semibold mb-4 flex items-center gap-2">
+                <span>💰</span> 
+                <span>Your Discounts</span>
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Fuel Type -->
                 <div>
-                    <h3 class="font-semibold flex items-center gap-2">
-                        <span>🔑</span> 
-                        <span>Your NSW API Credentials</span>
-                    </h3>
-                    <p class="text-xs text-zinc-500 mt-0.5">Uses your own free quota (2500 calls/month)</p>
+                    <label class="block text-xs font-medium text-zinc-400 mb-1.5">Fuel Type</label>
+                    <select id="fuelType" onchange="updateRankedList()"
+                            class="w-full bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-3 text-sm">
+                        <option value="U91">U91 (Unleaded 91)</option>
+                        <option value="E10">E10</option>
+                        <option value="Diesel">Diesel</option>
+                        <option value="P95">P95</option>
+                        <option value="P98">P98</option>
+                    </select>
+                </div>
+
+                <!-- Brand Discount -->
+                <div>
+                    <label class="block text-xs font-medium text-zinc-400 mb-1.5">Brand Discount</label>
+                    <select id="discountBrand" onchange="updateDiscount()"
+                            class="w-full bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-3 text-sm">
+                        <option value="">No Discount</option>
+                        <option value="7-Eleven">7-Eleven</option>
+                        <option value="Shell">Shell</option>
+                        <option value="BP">BP</option>
+                        <option value="Ampol">Ampol / Caltex</option>
+                        <option value="United">United</option>
+                        <option value="Puma">Puma</option>
+                        <option value="Metro">Metro</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-zinc-400 mb-1.5">Discount (¢ per litre)</label>
+                    <input id="discountAmount" type="number" value="0" step="0.1" 
+                           class="w-full bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-3 text-sm"
+                           onchange="updateDiscount()">
                 </div>
             </div>
+            <p class="text-xs text-zinc-500 mt-3">Discounts are applied to the selected fuel type.</p>
+        </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-xs font-medium text-zinc-400 mb-1.5">API Key</label>
-                    <input id="apiKey" type="text" placeholder="Enter your API Key"
-                           class="w-full bg-zinc-950 border border-zinc-700 focus:border-emerald-600 rounded-2xl px-4 py-3 text-sm outline-none">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-400 mb-1.5">API Secret</label>
-                    <input id="apiSecret" type="password" placeholder="Enter your API Secret"
-                           class="w-full bg-zinc-950 border border-zinc-700 focus:border-emerald-600 rounded-2xl px-4 py-3 text-sm outline-none">
-                </div>
+        <!-- Map -->
+        <div class="mb-6">
+            <div class="flex items-center justify-between mb-2 px-1">
+                <div class="font-semibold">Map View</div>
+                <div id="visibleCount" class="text-xs px-3 py-1 bg-zinc-900 rounded-full text-zinc-400"></div>
             </div>
+            <div id="map" class="map-container w-full h-[420px] md:h-[480px] bg-zinc-900 rounded-3xl"></div>
+        </div>
 
-            <div class="flex gap-3 mt-4">
-                <button onclick="saveCredentials()" 
-                        class="flex-1 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition-colors text-white font-medium py-3 rounded-2xl text-sm">
-                    Save Credentials
-                </button>
-                <button onclick="clearCredentials()" 
-                        class="px-6 bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-600 transition-colors rounded-2xl text-sm font-medium">
-                    Clear
+        <!-- Ranked List -->
+        <div>
+            <div class="flex items-center justify-between mb-3 px-1">
+                <div class="font-semibold">Cheapest Stations (Visible on Map)</div>
+                <button onclick="updateRankedList()" 
+                        class="text-xs px-4 py-2 bg-zinc-900 hover:bg-zinc-800 rounded-2xl text-zinc-400">
+                    Refresh List
                 </button>
             </div>
             
-            <p class="text-[10px] text-center text-zinc-500 mt-3">
-                Get free keys at <a href="https://api.nsw.gov.au/" target="_blank" class="text-emerald-400 underline">api.nsw.gov.au</a>
-            </p>
+            <div id="rankedList" 
+                 class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden max-h-[500px] overflow-y-auto">
+                <!-- Populated by JavaScript -->
+            </div>
         </div>
 
-        <!-- Main Content -->
-        <div class="px-4 pb-6">
-            <!-- Load Button -->
-            <button onclick="loadRealNSWData()" 
-                    class="w-full bg-white text-zinc-900 font-semibold py-4 rounded-3xl text-base active:scale-[0.985] transition-all flex items-center justify-center gap-2 shadow-lg mb-5">
-                <span>🔄</span>
-                <span>Load Live NSW Prices</span>
-            </button>
-
-            <!-- Map -->
-            <div class="mb-5">
-                <div class="flex items-center justify-between mb-2 px-1">
-                    <div class="font-semibold">Map View</div>
-                    <div id="stationCount" class="text-xs px-3 py-1 bg-zinc-900 rounded-full text-zinc-400"></div>
-                </div>
-                <div id="map" class="map-container w-full h-[420px] md:h-[480px] bg-zinc-900 rounded-3xl"></div>
-            </div>
-
-            <!-- Ranked List -->
-            <div>
-                <div class="flex items-center justify-between mb-3 px-1">
-                    <div class="font-semibold">Cheapest Stations</div>
-                    <button onclick="updateRankedList()" 
-                            class="text-xs px-3 py-1 bg-zinc-900 hover:bg-zinc-800 rounded-full text-zinc-400">
-                        Refresh
-                    </button>
-                </div>
-                
-                <div id="rankedList" 
-                     class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden max-h-[420px] overflow-y-auto">
-                    <!-- Populated by JS -->
-                </div>
-            </div>
+        <div class="text-center text-xs text-zinc-500 mt-8 pb-8">
+            Data updates hourly via GitHub Actions • Prices shown include your selected discounts
         </div>
     </div>
 
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // Tailwind script
-        function initializeTailwind() {
-            document.documentElement.style.setProperty('--accent', '#166534');
-        }
-
-        // ==================== DATA ====================
-        let stations = [];
+        // ==================== STATE ====================
+        let allStations = [];
         let map;
         let markers = [];
-
-        const sampleStations = [
-            { id: 1, brand: "7-Eleven", name: "Sydney CBD", lat: -33.8688, lng: 151.2093, prices: { U91: 179.9, E10: 177.9, Diesel: 199.9, P95: 199.9, P98: 209.9 }, updated: "sample" },
-            { id: 2, brand: "Shell", name: "Parramatta", lat: -33.8151, lng: 151.0034, prices: { U91: 181.9, E10: 179.9, Diesel: 195.9, P95: 201.9, P98: 211.9 }, updated: "sample" },
-            { id: 3, brand: "Caltex", name: "Chatswood", lat: -33.7969, lng: 151.1833, prices: { U91: 178.9, E10: 176.9, Diesel: 194.9, P95: 198.9, P98: 208.9 }, updated: "sample" },
-            { id: 4, brand: "BP", name: "Newcastle", lat: -32.9283, lng: 151.7817, prices: { U91: 182.9, E10: 180.9, Diesel: 197.9, P95: 202.9, P98: 212.9 }, updated: "sample" },
-            { id: 5, brand: "United", name: "Wollongong", lat: -34.4240, lng: 150.8931, prices: { U91: 175.9, E10: 173.9, Diesel: 192.9, P95: 196.9, P98: 206.9 }, updated: "sample" }
-        ];
-
-        // ==================== CREDENTIALS ====================
-        function saveCredentials() {
-            const key = document.getElementById('apiKey').value.trim();
-            const secret = document.getElementById('apiSecret').value.trim();
-
-            if (!key || !secret) {
-                alert("Please enter both API Key and API Secret");
-                return;
-            }
-
-            localStorage.setItem('nsw_fuel_api_key', key);
-            localStorage.setItem('nsw_fuel_api_secret', secret);
-            
-            const status = document.getElementById('dataStatus');
-            status.textContent = 'Credentials saved ✓';
-            status.className = 'text-xs px-3 py-1.5 rounded-full bg-emerald-900 text-emerald-400 border border-emerald-800';
-            
-            setTimeout(() => {
-                status.textContent = 'Ready';
-                status.className = 'text-xs px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400';
-            }, 2000);
-        }
-
-        function clearCredentials() {
-            localStorage.removeItem('nsw_fuel_api_key');
-            localStorage.removeItem('nsw_fuel_api_secret');
-            document.getElementById('apiKey').value = '';
-            document.getElementById('apiSecret').value = '';
-            
-            const status = document.getElementById('dataStatus');
-            status.textContent = 'Credentials cleared';
-            setTimeout(() => {
-                status.textContent = 'Ready';
-                status.className = 'text-xs px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400';
-            }, 1500);
-        }
-
-        function getSavedCredentials() {
-            const key = localStorage.getItem('nsw_fuel_api_key');
-            const secret = localStorage.getItem('nsw_fuel_api_secret');
-            return (key && secret) ? { key, secret } : null;
-        }
-
-        function loadSavedCredentials() {
-            const creds = getSavedCredentials();
-            if (creds) {
-                document.getElementById('apiKey').value = creds.key;
-                document.getElementById('apiSecret').value = creds.secret;
-            }
-        }
+        let currentDiscount = { brand: '', amount: 0 };
 
         // ==================== MAP ====================
         function initMap() {
@@ -231,173 +140,127 @@
                 attributionControl: false
             }).setView([-33.8688, 151.2093], 10);
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                className: 'map-tiles'
-            }).addTo(map);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-            // Add sample data on first load
-            stations = [...sampleStations];
-            addMarkers();
-            updateRankedList();
+            // Update list when map moves or zooms
+            map.on('moveend', updateRankedList);
+            map.on('zoomend', updateRankedList);
         }
 
-        function addMarkers() {
-            // Clear existing markers
-            markers.forEach(marker => map.removeLayer(marker));
+        function addMarkers(stationsToShow) {
+            markers.forEach(m => map.removeLayer(m));
             markers = [];
 
-            stations.forEach(station => {
+            stationsToShow.forEach(station => {
                 const marker = L.marker([station.lat, station.lng]).addTo(map);
-                
-                const popupContent = `
-                    <div class="min-w-[200px]">
-                        <div class="font-semibold">${station.brand}</div>
-                        <div class="text-sm text-zinc-600">${station.name}</div>
-                        <div class="mt-2 text-xs space-y-1">
-                            <div>U91: <span class="font-mono">${station.prices.U91}</span>¢</div>
-                            <div>E10: <span class="font-mono">${station.prices.E10}</span>¢</div>
-                            <div>Diesel: <span class="font-mono">${station.prices.Diesel}</span>¢</div>
-                        </div>
-                        <div class="text-[10px] text-zinc-400 mt-2">${station.updated}</div>
-                    </div>
-                `;
-                
-                marker.bindPopup(popupContent);
                 markers.push(marker);
             });
-
-            document.getElementById('stationCount').textContent = `${stations.length} stations`;
         }
 
-        // ==================== LIVE DATA ====================
-        async function loadRealNSWData() {
-            const status = document.getElementById('dataStatus');
-            status.textContent = 'Getting access token...';
-            status.className = 'text-xs px-3 py-1.5 rounded-full bg-blue-900 text-blue-400 border border-blue-800';
-
-            const creds = getSavedCredentials();
-            
-            if (!creds) {
-                status.textContent = 'Add your API Key + Secret above';
-                status.className = 'text-xs px-3 py-1.5 rounded-full bg-amber-900 text-amber-400 border border-amber-800';
-                return;
-            }
-
-            const basicAuth = btoa(`${creds.key}:${creds.secret}`);
-
+        // ==================== DATA LOADING ====================
+        async function loadFuelData() {
             try {
-                // === Step 1: Get OAuth Token ===
-                const tokenUrl = 'https://api.onegov.nsw.gov.au/oauth/client_credential/accesstoken?grant_type=client_credentials';
-                const tokenProxyUrl = `https://corsproxy.io/?${encodeURIComponent(tokenUrl)}`;
+                const response = await fetch('./data/fuel-prices.json');
+                if (!response.ok) throw new Error('Data file not found');
 
-                console.log('Requesting OAuth token...');
-
-                const tokenResponse = await fetch(tokenProxyUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Basic ${basicAuth}`,
-                        'Content-Type': 'application/x-www-form-urlencoded'
+                const rawData = await response.json();
+                
+                allStations = rawData.map((p, i) => ({
+                    id: i + 1,
+                    brand: p.brand || p.Brand || 'Unknown',
+                    name: p.siteName || p.SiteName || p.address || 'Station',
+                    lat: parseFloat(p.latitude || p.Latitude),
+                    lng: parseFloat(p.longitude || p.Longitude),
+                    prices: {
+                        U91: parseFloat(p.U91 || p.price || p.Price) || 180,
+                        E10: parseFloat(p.E10 || p.price || p.Price) || 177,
+                        Diesel: parseFloat(p.Diesel || p.price || p.Price) || 195,
+                        P95: parseFloat(p.P95 || p.price || p.Price) || 200,
+                        P98: parseFloat(p.P98 || p.price || p.Price) || 210
                     }
-                });
+                }));
 
-                // Read response as text first (safer)
-                const tokenText = await tokenResponse.text();
-                console.log('Token raw response:', tokenText);
+                document.getElementById('lastUpdated').textContent = 
+                    `Updated: ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
 
-                if (!tokenResponse.ok) {
-                    throw new Error(`Token request failed with status ${tokenResponse.status}`);
-                }
-
-                let tokenData;
-                try {
-                    tokenData = JSON.parse(tokenText);
-                } catch (e) {
-                    throw new Error('Token response was not valid JSON');
-                }
-
-                const accessToken = tokenData.access_token;
-
-                if (!accessToken) {
-                    console.error('Full token response:', tokenData);
-                    throw new Error('No access_token received from API');
-                }
-
-                console.log('Token obtained successfully');
-
-                // === Step 2: Fetch Prices ===
-                status.textContent = 'Loading live NSW data...';
-
-                const pricesUrl = 'https://api.onegov.nsw.gov.au/FuelPriceCheck/v1/fuel/prices';
-                const pricesProxyUrl = `https://corsproxy.io/?${encodeURIComponent(pricesUrl)}`;
-
-                const pricesResponse = await fetch(pricesProxyUrl, {
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`
-                    }
-                });
-
-                if (!pricesResponse.ok) {
-                    throw new Error(`Prices request failed with status ${pricesResponse.status}`);
-                }
-
-                const data = await pricesResponse.json();
-                const prices = data.prices || data;
-
-                stations = prices
-                    .filter(p => p.latitude && p.longitude)
-                    .map((p, i) => ({
-                        id: i + 1,
-                        brand: p.brand || p.Brand || 'Unknown',
-                        name: p.siteName || p.SiteName || p.address || 'Station',
-                        lat: parseFloat(p.latitude || p.Latitude),
-                        lng: parseFloat(p.longitude || p.Longitude),
-                        prices: {
-                            U91: parseFloat(p.U91 || p.price || p.Price) || 180,
-                            E10: parseFloat(p.E10 || p.price || p.Price) || 177,
-                            Diesel: parseFloat(p.Diesel || p.price || p.Price) || 195,
-                            P95: parseFloat(p.P95 || p.price || p.Price) || 200,
-                            P98: parseFloat(p.P98 || p.price || p.Price) || 210
-                        },
-                        updated: 'live NSW'
-                    }));
-
-                if (stations.length > 0) {
-                    const avgLat = stations.reduce((a, b) => a + b.lat, 0) / stations.length;
-                    const avgLng = stations.reduce((a, b) => a + b.lng, 0) / stations.length;
-                    map.setView([avgLat, avgLng], 9);
-
-                    status.textContent = `Live • ${stations.length} stations`;
-                    status.className = 'text-xs px-3 py-1.5 rounded-full bg-emerald-900 text-emerald-400 border border-emerald-800';
-                    
-                    addMarkers();
-                    updateRankedList();
-                    return;
-                }
+                // Initial render
+                const visibleStations = getVisibleStations();
+                addMarkers(visibleStations);
+                updateRankedList();
 
             } catch (error) {
-                console.error('Live data error:', error);
-                status.textContent = 'Live unavailable — using sample';
-                status.className = 'text-xs px-3 py-1.5 rounded-full bg-amber-900 text-amber-400 border border-amber-800';
-                stations = [...sampleStations];
-                addMarkers();
+                console.error('Failed to load fuel data:', error);
+                document.getElementById('lastUpdated').textContent = 'Using sample data';
+                
+                // Fallback sample data
+                allStations = [
+                    { id: 1, brand: "7-Eleven", name: "Sydney CBD", lat: -33.8688, lng: 151.2093, prices: { U91: 179.9, E10: 177.9, Diesel: 199.9, P95: 199.9, P98: 209.9 } },
+                    { id: 2, brand: "Shell", name: "Parramatta", lat: -33.8151, lng: 151.0034, prices: { U91: 181.9, E10: 179.9, Diesel: 195.9, P95: 201.9, P98: 211.9 } },
+                    { id: 3, brand: "BP", name: "Chatswood", lat: -33.7969, lng: 151.1833, prices: { U91: 178.9, E10: 176.9, Diesel: 194.9, P95: 198.9, P98: 208.9 } }
+                ];
+                
+                const visibleStations = getVisibleStations();
+                addMarkers(visibleStations);
                 updateRankedList();
             }
         }
 
+        // ==================== DISCOUNT LOGIC ====================
+        function updateDiscount() {
+            const brand = document.getElementById('discountBrand').value;
+            const amount = parseFloat(document.getElementById('discountAmount').value) || 0;
+            
+            currentDiscount = { brand, amount };
+            updateRankedList();
+        }
+
+        function getEffectivePrice(station, fuelType) {
+            const basePrice = station.prices[fuelType] || 180;
+            
+            if (currentDiscount.brand && station.brand === currentDiscount.brand) {
+                return Math.max(basePrice - currentDiscount.amount, 0);
+            }
+            return basePrice;
+        }
+
+        // ==================== VISIBLE STATIONS ====================
+        function getVisibleStations() {
+            if (!map) return allStations;
+
+            const bounds = map.getBounds();
+            return allStations.filter(station => 
+                bounds.contains([station.lat, station.lng])
+            );
+        }
 
         // ==================== RANKED LIST ====================
         function updateRankedList() {
             const container = document.getElementById('rankedList');
+            const fuelType = document.getElementById('fuelType').value;
+            const visibleStations = getVisibleStations();
+
+            document.getElementById('visibleCount').textContent = 
+                `${visibleStations.length} stations visible`;
+
+            if (visibleStations.length === 0) {
+                container.innerHTML = `<div class="p-6 text-center text-zinc-400">No stations visible in current map area.</div>`;
+                return;
+            }
+
+            // Sort by effective price
+            const sorted = [...visibleStations].sort((a, b) => {
+                return getEffectivePrice(a, fuelType) - getEffectivePrice(b, fuelType);
+            });
+
             container.innerHTML = '';
 
-            if (stations.length === 0) return;
+            sorted.slice(0, 20).forEach((station, index) => {
+                const effectivePrice = getEffectivePrice(station, fuelType);
+                const originalPrice = station.prices[fuelType];
+                const hasDiscount = currentDiscount.brand && station.brand === currentDiscount.brand;
 
-            // Sort by U91 price (cheapest first)
-            const sorted = [...stations].sort((a, b) => a.prices.U91 - b.prices.U91);
-
-            sorted.slice(0, 15).forEach((station, index) => {
                 const div = document.createElement('div');
-                div.className = `station-row px-5 py-4 flex justify-between items-center border-b border-zinc-800 last:border-b-0 active:bg-zinc-800`;
+                div.className = `station-row px-5 py-4 flex justify-between items-center border-b border-zinc-800 last:border-b-0 cursor-pointer`;
                 
                 div.innerHTML = `
                     <div class="flex items-center gap-3">
@@ -408,21 +271,18 @@
                         </div>
                     </div>
                     <div class="text-right">
-                        <div class="font-mono font-semibold text-emerald-400">${station.prices.U91}¢</div>
-                        <div class="text-[10px] text-zinc-500">U91</div>
+                        <div class="font-mono font-semibold ${hasDiscount ? 'text-emerald-400' : 'text-white'}">
+                            ${effectivePrice.toFixed(1)}¢
+                        </div>
+                        ${hasDiscount ? 
+                            `<div class="text-[10px] text-emerald-400 line-through">${originalPrice}¢</div>` : 
+                            `<div class="text-[10px] text-zinc-500">${originalPrice}¢</div>`
+                        }
                     </div>
                 `;
 
-                // Click to fly to station on map
                 div.onclick = () => {
-                    map.flyTo([station.lat, station.lng], 14, { duration: 0.8 });
-                    
-                    // Find and open marker popup
-                    const marker = markers.find(m => 
-                        Math.abs(m.getLatLng().lat - station.lat) < 0.0001 && 
-                        Math.abs(m.getLatLng().lng - station.lng) < 0.0001
-                    );
-                    if (marker) marker.openPopup();
+                    map.flyTo([station.lat, station.lng], 15, { duration: 0.8 });
                 };
 
                 container.appendChild(div);
@@ -430,29 +290,19 @@
         }
 
         // ==================== INITIALIZATION ====================
-        function initializeApp() {
-            initializeTailwind();
+        async function initializeApp() {
             initMap();
-            loadSavedCredentials();
-            
-            // Load sample data initially
-            stations = [...sampleStations];
-            addMarkers();
-            updateRankedList();
+            await loadFuelData();
 
-            // Keyboard support
-            document.addEventListener('keydown', function(e) {
-                if (e.key === '/' && document.activeElement.tagName === 'BODY') {
-                    e.preventDefault();
-                    document.getElementById('apiKey').focus();
-                }
-            });
+            // Set initial discount values
+            document.getElementById('discountAmount').addEventListener('input', updateDiscount);
+            document.getElementById('fuelType').addEventListener('change', updateRankedList);
+            document.getElementById('discountBrand').addEventListener('change', updateDiscount);
 
-            // Mobile-friendly: prevent zoom on double tap for inputs
-            console.log('%c[XDC FuelCheck] Mobile-optimized version loaded', 'color:#666');
+            // Initial list update
+            setTimeout(updateRankedList, 500);
         }
 
-        // Start the app
         window.onload = initializeApp;
     </script>
 </body>
