@@ -284,7 +284,9 @@
             }
 
             const basicAuth = btoa(`${creds.key}:${creds.secret}`);
-            const apiUrl = 'https://api.nsw.gov.au/fuelcheck/prices';
+            
+            // ✅ Correct endpoint
+            const apiUrl = 'https://api.onegov.nsw.gov.au/FuelPriceCheck/v1/fuel/prices';
             const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`;
 
             try {
@@ -294,7 +296,9 @@
                     }
                 });
 
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
 
                 const data = await res.json();
                 const prices = data.prices || data;
@@ -303,16 +307,16 @@
                     .filter(p => p.latitude && p.longitude)
                     .map((p, i) => ({
                         id: i + 1,
-                        brand: p.brand || 'Unknown',
-                        name: p.siteName || p.address || 'Station',
-                        lat: parseFloat(p.latitude),
-                        lng: parseFloat(p.longitude),
+                        brand: p.brand || p.Brand || 'Unknown',
+                        name: p.siteName || p.SiteName || p.address || 'Station',
+                        lat: parseFloat(p.latitude || p.Latitude),
+                        lng: parseFloat(p.longitude || p.Longitude),
                         prices: {
-                            U91: parseFloat(p.U91 || p.price) || 180,
-                            E10: parseFloat(p.E10 || p.price) || 177,
-                            Diesel: parseFloat(p.Diesel || p.price) || 195,
-                            P95: parseFloat(p.P95 || p.price) || 200,
-                            P98: parseFloat(p.P98 || p.price) || 210
+                            U91: parseFloat(p.U91 || p.price || p.Price) || 180,
+                            E10: parseFloat(p.E10 || p.price || p.Price) || 177,
+                            Diesel: parseFloat(p.Diesel || p.price || p.Price) || 195,
+                            P95: parseFloat(p.P95 || p.price || p.Price) || 200,
+                            P98: parseFloat(p.P98 || p.price || p.Price) || 210
                         },
                         updated: 'live NSW'
                     }));
@@ -332,6 +336,14 @@
             } catch (error) {
                 console.error('Failed to load live data:', error);
             }
+
+            // Fallback
+            status.textContent = 'Live unavailable — using sample';
+            status.className = 'text-xs px-3 py-1.5 rounded-full bg-amber-900 text-amber-400 border border-amber-800';
+            stations = [...sampleStations];
+            addMarkers();
+            updateRankedList();
+        }
 
             // Fallback
             status.textContent = 'Live unavailable — using sample';
