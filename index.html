@@ -345,13 +345,6 @@
             updateRankedList();
         }
 
-            // Fallback
-            status.textContent = 'Live unavailable — using sample';
-            status.className = 'text-xs px-3 py-1.5 rounded-full bg-amber-900 text-amber-400 border border-amber-800';
-            stations = [...sampleStations];
-            addMarkers();
-            updateRankedList();
-        }
 
         // ==================== RANKED LIST ====================
         function updateRankedList() {
