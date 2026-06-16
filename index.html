@@ -233,21 +233,27 @@
         }
 
         // ==================== CRYPTO PRICES ====================
+        let cryptoPrices = { XDC: 0, USDC: 0 };
+
         async function loadCryptoPrices() {
             try {
                 const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=xdc-network,usd-coin&vs_currencies=aud');
                 const data = await res.json();
-                
-                cryptoPrices.XDC = data['xdc-network']?.aud || 0;
-                cryptoPrices.USDC = data['usd-coin']?.aud || 1.5; // fallback ~1.5 AUD
+
+                cryptoPrices.XDC = data['xdc-network']?.aud || 0.12;   // fallback
+                cryptoPrices.USDC = data['usd-coin']?.aud || 1.52;     // fallback
+
+                console.log('Crypto prices loaded:', cryptoPrices);
             } catch (e) {
-                console.warn('Could not fetch crypto prices. Using fallback values.');
+                console.warn('Failed to fetch crypto prices. Using fallback values.');
                 cryptoPrices.XDC = 0.12;
-                cryptoPrices.USDC = 1.5;
+                cryptoPrices.USDC = 1.52;
             }
         }
 
         function convertToCrypto(audPrice, currency) {
+            if (!audPrice || audPrice <= 0) return null;
+
             if (currency === 'XDC' && cryptoPrices.XDC > 0) {
                 return (audPrice / cryptoPrices.XDC).toFixed(2);
             }
