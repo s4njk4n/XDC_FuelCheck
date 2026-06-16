@@ -47,6 +47,33 @@
             </div>
         </div>
 
+
+
+        <!-- Map -->
+        <div class="mb-6">
+            <div class="flex items-center justify-between mb-2 px-1">
+                <div class="font-semibold">Map View</div>
+                <div id="visibleCount" class="text-xs px-3 py-1 bg-zinc-900 rounded-full text-zinc-400"></div>
+            </div>
+            <div id="map" class="map-container w-full h-[420px] md:h-[480px] bg-zinc-900 rounded-3xl"></div>
+        </div>
+
+        <!-- Ranked List -->
+        <div>
+            <div class="flex items-center justify-between mb-3 px-1">
+                <div class="font-semibold">Cheapest Stations (Visible on Map)</div>
+                <button onclick="updateRankedList()" 
+                        class="text-xs px-4 py-2 bg-zinc-900 hover:bg-zinc-800 rounded-2xl text-zinc-400">
+                    Refresh List
+                </button>
+            </div>
+            
+            <div id="rankedList" 
+                 class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden max-h-[500px] overflow-y-auto">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+
         <!-- Discount Settings -->
         <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 mb-6">
             <h3 class="font-semibold mb-4 flex items-center gap-2">
@@ -104,32 +131,7 @@
                 </div>
             </div>
         </div>
-
-        <!-- Map -->
-        <div class="mb-6">
-            <div class="flex items-center justify-between mb-2 px-1">
-                <div class="font-semibold">Map View</div>
-                <div id="visibleCount" class="text-xs px-3 py-1 bg-zinc-900 rounded-full text-zinc-400"></div>
-            </div>
-            <div id="map" class="map-container w-full h-[420px] md:h-[480px] bg-zinc-900 rounded-3xl"></div>
-        </div>
-
-        <!-- Ranked List -->
-        <div>
-            <div class="flex items-center justify-between mb-3 px-1">
-                <div class="font-semibold">Cheapest Stations (Visible on Map)</div>
-                <button onclick="updateRankedList()" 
-                        class="text-xs px-4 py-2 bg-zinc-900 hover:bg-zinc-800 rounded-2xl text-zinc-400">
-                    Refresh List
-                </button>
-            </div>
-            
-            <div id="rankedList" 
-                 class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden max-h-[500px] overflow-y-auto">
-                <!-- Populated by JavaScript -->
-            </div>
-        </div>
-
+        
         <div class="text-center text-xs text-zinc-500 mt-8 pb-8">
             Data updates hourly via GitHub Actions • Prices shown include your selected discounts
         </div>
