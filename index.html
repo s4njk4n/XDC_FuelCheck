@@ -29,20 +29,6 @@
             background-color: #27251f;
         }
         
-        .xdc-accent {
-            color: #00E5FF;
-        }
-        
-        .xdc-button {
-            background-color: #00E5FF;
-            color: black;
-            font-weight: 600;
-        }
-        
-        .xdc-button:hover {
-            background-color: #00C4D9;
-        }
-        
         @media (max-width: 768px) {
             .map-container { height: 380px !important; }
         }
@@ -53,20 +39,21 @@
         
         <!-- Header -->
         <div class="pt-6 pb-5">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div class="flex items-center justify-between">
                 
                 <!-- Logo + Title -->
                 <div class="flex items-center gap-3">
-                    <img src="XDC_Network_Blk_Mono_Logo.jpeg" alt="XDC Network" class="h-10 w-auto">
+                    <a href="https://xdc.org" target="_blank" rel="noopener noreferrer">
+                        <img src="XDC_Network_Blk_Mono_Logo.jpeg" alt="XDC Network" class="h-9 w-auto hover:opacity-80 transition-opacity">
+                    </a>
                     <div>
-                        <h1 class="text-3xl font-semibold title-font tracking-tighter">XDC FuelCheck</h1>
-                        <p class="text-sm text-zinc-400 -mt-1">NSW Fuel Pricing</p>
+                        <h1 class="text-3xl font-semibold tracking-tighter">FuelCheck <span class="text-xl font-normal text-zinc-400">NSW</span></h1>
                     </div>
                 </div>
 
                 <!-- Last Updated -->
                 <div id="lastUpdated" 
-                     class="text-xs px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 self-start md:self-center">
+                     class="text-xs px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400">
                     Loading data...
                 </div>
             </div>
@@ -133,7 +120,7 @@
                 </div>
             </div>
         
-            <button onclick="saveDiscount()" class="mt-4 xdc-button px-6 py-3 rounded-2xl text-sm">
+            <button onclick="saveDiscount()" class="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-6 py-3 rounded-2xl text-sm">
                 Save Discount for this Brand
             </button>
         
