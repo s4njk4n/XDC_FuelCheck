@@ -243,12 +243,12 @@
             });
         }
 
-        // ==================== DATA LOADING (with cache busting) ====================
+        // ==================== DATA LOADING (Fixed Timestamp Logic) ====================
         async function loadFuelData(forceRefresh = false) {
             try {
                 let url = './data/fuel-prices.json';
                 
-                // Bypass browser cache when refreshing
+                // Bypass browser cache when user clicks "Refresh Prices"
                 if (forceRefresh) {
                     url += `?t=${Date.now()}`;
                 }
@@ -290,13 +290,17 @@
                         };
                     });
 
-                // Show when WE (the browser) last fetched the data
-                const now = new Date();
-                const timeString = now.toLocaleTimeString([], { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                });
-                document.getElementById('lastUpdated').textContent = `Updated: ${timeString}`;
+                // Show the timestamp from inside the data file (when prices were last updated)
+                if (data.lastUpdated) {
+                    const date = new Date(data.lastUpdated);
+                    const timeString = date.toLocaleTimeString([], { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                    document.getElementById('lastUpdated').textContent = `Updated: ${timeString}`;
+                } else {
+                    document.getElementById('lastUpdated').textContent = 'Data loaded';
+                }
 
                 const visibleStations = getVisibleStations();
                 addMarkers(visibleStations);
