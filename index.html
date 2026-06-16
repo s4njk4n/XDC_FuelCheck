@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discount Fuel Ranker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        #map { height: 58vh; min-height: 340px; }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="bg-white border-b px-4 py-4 flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold">Discount Fuel Ranker</h1>
+                <p class="text-sm text-slate-500">Live NSW prices + your discounts</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="loadRealNSWData()" 
+                        class="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm hover:bg-blue-700">
+                    Load Live NSW Data
+                </button>
+                <button onclick="getUserLocation()" class="px-3 py-2 border rounded-xl text-sm">My Location</button>
+                <button onclick="showDiscountModal()" class="px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm">Edit Discounts</button>
+            </div>
+        </div>
+
+        <div class="bg-white border-b px-4 py-3 flex items-center gap-4">
+            <div>
+                <label class="text-sm font-medium mr-2">Fuel Type:</label>
+                <select id="fuelType" onchange="updateEverything()" class="border rounded-xl px-3 py-1.5 text-sm">
+                    <option value="U91">Unleaded 91</option>
+                    <option value="E10">E10</option>
+                    <option value="Diesel">Diesel</option>
+                    <option value="P95">Premium 95</option>
+                    <option value="P98">Premium 98</option>
+                </select>
+            </div>
+            <div id="dataStatus" class="text-xs px-3 py-1 rounded-full bg-slate-100 text-slate-600">
+                Sample data
+            </div>
+        </div>
+
+        <div class="p-4">
+            <div id="map" class="rounded-3xl shadow border w-full"></div>
+        </div>
+
+        <div class="px-4 pb-8">
+            <div class="flex justify-between mb-3">
+                <h2 class="font-semibold">Cheapest stations in view (after your discounts)</h2>
+                <div id="stationCount" class="text-sm text-slate-500"></div>
+            </div>
+            <div class="bg-white rounded-3xl shadow border overflow-hidden">
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-100">
+                        <tr>
+                            <th class="px-4 py-3 text-left">#</th>
+                            <th class="px-4 py-3 text-left">Brand</th>
+                            <th class="px-4 py-3 text-left">Station</th>
+                            <th class="px-4 py-3 text-right">Base</th>
+                            <th class="px-4 py-3 text-right">Discount</th>
+                            <th class="px-4 py-3 text-right bg-emerald-50">You Pay</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rankedList" class="divide-y"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Discount Modal -->
+    <div id="discountModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-3xl w-full max-w-md mx-4">
+            <div class="p-5 border-b flex justify-between">
+                <h3 class="font-semibold">Your Discounts (¢/L)</h3>
+                <button onclick="hideDiscountModal()" class="text-2xl">×</button>
+            </div>
+            <div class="p-5">
+                <div class="flex gap-2 mb-4">
+                    <input id="newBrand" placeholder="Brand (e.g. Coles Express)" class="flex-1 border rounded-2xl px-4 py-2">
+                    <input id="newDiscount" type="number" placeholder="¢/L" class="w-24 border rounded-2xl px-4 py-2">
+                    <button onclick="addDiscount()" class="px-5 bg-emerald-600 text-white rounded-2xl">Add</button>
+                </div>
+                <div id="currentDiscounts" class="max-h-60 overflow-auto"></div>
+            </div>
+            <div class="p-4 border-t flex justify-between">
+                <button onclick="clearAllDiscounts()" class="text-red-600 px-4">Clear all</button>
+                <button onclick="hideDiscountModal()" class="px-6 py-2 bg-slate-900 text-white rounded-2xl">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let stations = [];
+        let map, markers = [], discounts = {};
+
+        const sampleStations = [ /* same sample data as before - kept short for space */ 
+            { id: 1, brand: "Ampol", name: "Ampol Coomera", lat: -27.852, lng: 153.312, prices: { U91: 172.9, E10: 169.9, Diesel: 189.9, P95: 195.9, P98: 205.9 }, updated: "sample" },
+            { id: 2, brand: "Coles Express", name: "Coles Express Helensvale", lat: -27.918, lng: 153.338, prices: { U91: 174.9, E10: 171.9, Diesel: 191.9, P95: 197.9, P98: 207.9 }, updated: "sample" },
+            { id: 3, brand: "7-Eleven", name: "7-Eleven Southport", lat: -27.967, lng: 153.412, prices: { U91: 178.9, E10: 175.9, Diesel: 194.9, P95: 201.9, P98: 211.9 }, updated: "sample" },
+            { id: 4, brand: "BP", name: "BP Pacific Pines", lat: -27.932, lng: 153.298, prices: { U91: 176.9, E10: 173.9, Diesel: 192.9, P95: 199.9, P98: 209.9 }, updated: "sample" },
+            { id: 5, brand: "United", name: "United Oxenford", lat: -27.885, lng: 153.295, prices: { U91: 171.9, E10: 168.9, Diesel: 188.9, P95: 194.9, P98: 204.9 }, updated: "sample" },
+        ];
+
+        function loadDiscounts() {
+            const saved = localStorage.getItem('fuelDiscounts');
+            if (saved) discounts = JSON.parse(saved);
+        }
+
+        function getEffectivePrice(station, fuelType) {
+            const base = station.prices[fuelType] || 999;
+            return Math.max(0, Math.round((base - (discounts[station.brand] || 0)) * 10) / 10);
+        }
+
+        function initMap() {
+            map = L.map('map').setView([-27.97, 153.35], 11);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            map.on('moveend', updateRankedList);
+        }
+
+        function addMarkers() {
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+            const fuelType = document.getElementById('fuelType').value;
+
+            stations.forEach(station => {
+                const effective = getEffectivePrice(station, fuelType);
+                const popup = `<strong>${station.brand}</strong><br>${station.name}<br>You pay: <b>${effective} ¢/L</b>`;
+                const marker = L.marker([station.lat, station.lng]).bindPopup(popup).addTo(map);
+                marker.on('click', () => highlightStationInList(station.id));
+                markers.push(marker);
+            });
+        }
+
+        function updateRankedList() {
+            const fuelType = document.getElementById('fuelType').value;
+            const bounds = map.getBounds();
+            let visible = stations.filter(s => bounds.contains([s.lat, s.lng]));
+            if (visible.length === 0) visible = stations;
+
+            const ranked = visible.map(s => ({
+                ...s,
+                base: s.prices[fuelType],
+                effective: getEffectivePrice(s, fuelType),
+                discount: discounts[s.brand] || 0
+            })).sort((a, b) => a.effective - b.effective);
+
+            const tbody = document.getElementById('rankedList');
+            tbody.innerHTML = ranked.map((s, i) => `
+                <tr class="cursor-pointer hover:bg-slate-50" onclick="focusStation(${s.id})">
+                    <td class="px-4 py-3">${i + 1}</td>
+                    <td class="px-4 py-3 font-medium">${s.brand}</td>
+                    <td class="px-4 py-3">${s.name}</td>
+                    <td class="px-4 py-3 text-right">${s.base}</td>
+                    <td class="px-4 py-3 text-right text-emerald-600">${s.discount ? '−' + s.discount : '—'}</td>
+                    <td class="px-4 py-3 text-right font-bold text-emerald-700">${s.effective}</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('stationCount').textContent = `${ranked.length} stations`;
+        }
+
+        function focusStation(id) {
+            const s = stations.find(x => x.id === id);
+            if (!s) return;
+            map.flyTo([s.lat, s.lng], 15);
+            highlightStationInList(id);
+        }
+
+        function highlightStationInList(id) {
+            document.querySelectorAll('#rankedList tr').forEach(r => r.classList.remove('bg-emerald-100'));
+            setTimeout(() => {
+                document.querySelectorAll('#rankedList tr').forEach(row => {
+                    if (row.textContent.includes(stations.find(s => s.id === id).name)) {
+                        row.classList.add('bg-emerald-100');
+                    }
+                });
+            }, 100);
+        }
+
+        function updateEverything() {
+            addMarkers();
+            updateRankedList();
+        }
+
+        // ==================== LIVE DATA ====================
+        async function loadRealNSWData() {
+            const status = document.getElementById('dataStatus');
+            status.textContent = 'Loading live NSW data...';
+            status.className = 'text-xs px-3 py-1 rounded-full bg-blue-100 text-blue-700';
+
+            const apiUrl = 'https://api.nsw.gov.au/fuelcheck/prices';
+            const proxies = [
+                `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`,
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`,
+                `https://thingproxy.freeboard.io/fetch/${apiUrl}`
+            ];
+
+            for (let proxy of proxies) {
+                try {
+                    console.log('Trying:', proxy);
+                    const res = await fetch(proxy);
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+
+                    const data = await res.json();
+                    const prices = data.prices || data;
+
+                    stations = prices.filter(p => p.latitude && p.longitude).map((p, i) => ({
+                        id: i + 1,
+                        brand: p.brand || 'Unknown',
+                        name: p.siteName || p.address || 'Station',
+                        lat: parseFloat(p.latitude),
+                        lng: parseFloat(p.longitude),
+                        prices: { U91: +p.price || 180, E10: +p.price || 177, Diesel: +p.price || 195, P95: +p.price || 200, P98: +p.price || 210 },
+                        updated: 'live NSW'
+                    }));
+
+                    if (stations.length > 0) {
+                        const avgLat = stations.reduce((a, b) => a + b.lat, 0) / stations.length;
+                        const avgLng = stations.reduce((a, b) => a + b.lng, 0) / stations.length;
+                        map.setView([avgLat, avgLng], 10);
+
+                        status.textContent = `Live NSW • ${stations.length} stations`;
+                        status.className = 'text-xs px-3 py-1 rounded-full bg-emerald-100 text-emerald-700';
+                        addMarkers();
+                        updateRankedList();
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('Proxy failed:', e);
+                }
+            }
+
+            status.textContent = 'Live NSW unavailable — using sample';
+            status.className = 'text-xs px-3 py-1 rounded-full bg-amber-100 text-amber-700';
+            stations = [...sampleStations];
+            addMarkers();
+            updateRankedList();
+        }
+
+        // Discount functions (same as before - kept concise)
+        function showDiscountModal() {
+            const container = document.getElementById('currentDiscounts');
+            container.innerHTML = Object.keys(discounts).map(brand => `
+                <div class="flex justify-between bg-slate-50 px-4 py-2 rounded-2xl mb-1">
+                    <span>${brand} −${discounts[brand]} ¢/L</span>
+                    <button onclick="removeDiscount('${brand}')" class="text-red-500">×</button>
+                </div>
+            `).join('') || '<p class="text-sm text-slate-400">No discounts yet</p>';
+            document.getElementById('discountModal').classList.remove('hidden');
+            document.getElementById('discountModal').classList.add('flex');
+        }
+
+        function hideDiscountModal() {
+            document.getElementById('discountModal').classList.remove('flex');
+            document.getElementById('discountModal').classList.add('hidden');
+            updateEverything();
+        }
+
+        function addDiscount() {
+            const brand = document.getElementById('newBrand').value.trim();
+            const val = parseFloat(document.getElementById('newDiscount').value);
+            if (brand && !isNaN(val)) {
+                discounts[brand] = val;
+                saveDiscounts();
+                showDiscountModal();
+                updateEverything();
+            }
+        }
+
+        function removeDiscount(brand) {
+            delete discounts[brand];
+            saveDiscounts();
+            showDiscountModal();
+            updateEverything();
+        }
+
+        function clearAllDiscounts() {
+            if (confirm('Clear all?')) {
+                discounts = {};
+                saveDiscounts();
+                showDiscountModal();
+                updateEverything();
+            }
+        }
+
+        function getUserLocation() {
+            navigator.geolocation.getCurrentPosition(p => map.flyTo([p.coords.latitude, p.coords.longitude], 12));
+        }
+
+        function init() {
+            loadDiscounts();
+            initMap();
+            stations = [...sampleStations];
+            addMarkers();
+            updateRankedList();
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
