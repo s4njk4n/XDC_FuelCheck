@@ -238,19 +238,28 @@
             }
         }
 
-        // ==================== CRYPTO PRICES ====================
+        // ==================== CRYPTO PRICES (Bitrue + CoinGecko) ====================
         async function loadCryptoPrices() {
             try {
-                const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=xdc-network,usd-coin&vs_currencies=aud');
-                const data = await res.json();
+                // 1. Get XDC/USDT from Bitrue
+                const bitrueRes = await fetch('https://openapi.bitrue.com/api/v1/ticker/price?symbol=XDCUSDT');
+                const bitrueData = await bitrueRes.json();
+                const xdcUsdt = parseFloat(bitrueData.price);
 
-                cryptoPrices.XDC = data['xdc-network']?.aud || 0.12;
-                cryptoPrices.USDC = data['usd-coin']?.aud || 1.52;
+                // 2. Get USDT/AUD from CoinGecko
+                const geckoRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=aud');
+                const geckoData = await geckoRes.json();
+                const usdtAud = geckoData.tether?.aud || 1.52;
 
-                console.log('Crypto prices loaded:', cryptoPrices);
+                // 3. Calculate XDC in AUD
+                cryptoPrices.XDC = xdcUsdt * usdtAud;
+                cryptoPrices.USDC = usdtAud;
+
+                console.log('Live crypto prices loaded:', cryptoPrices);
+
             } catch (e) {
-                console.warn('Failed to fetch crypto prices. Using fallback values.');
-                cryptoPrices.XDC = 0.12;
+                console.warn('Failed to fetch live crypto prices. Using fallback.');
+                cryptoPrices.XDC = 0.045;
                 cryptoPrices.USDC = 1.52;
             }
         }
@@ -258,7 +267,7 @@
         function convertToCrypto(centPrice, currency) {
             if (!centPrice || centPrice <= 0) return null;
 
-            const audPrice = centPrice / 100; // Convert cents to AUD
+            const audPrice = centPrice / 100;
 
             if (currency === 'XDC' && cryptoPrices.XDC > 0) {
                 return (audPrice / cryptoPrices.XDC).toFixed(2);
