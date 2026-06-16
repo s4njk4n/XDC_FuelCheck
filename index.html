@@ -250,22 +250,110 @@
             }
         }
 
-        // ==================== DISCOUNT LOGIC ====================
-        function updateDiscount() {
-            const brand = document.getElementById('discountBrand').value;
-            const amount = parseFloat(document.getElementById('discountAmount').value) || 0;
-            
-            currentDiscount = { brand, amount };
-            updateRankedList();
+        // ==================== DISCOUNT MANAGEMENT ====================
+        let savedDiscounts = [];
+
+        function loadSavedDiscounts() {
+                const saved = localStorage.getItem('fuelDiscounts');
+                savedDiscounts = saved ? JSON.parse(saved) : [];
+                renderSavedDiscounts();
+        }
+
+        function saveDiscount() {
+                const brand = document.getElementById('discountBrand').value;
+                const amount = parseFloat(document.getElementById('discountAmount').value);
+                const label = document.getElementById('discountLabel').value.trim();
+
+                if (!brand || !amount || amount <= 0) {
+                        alert("Please select a brand and enter a valid discount amount.");
+                        return;
+                }
+
+                // Remove existing discount for this brand (update instead of duplicate)
+                savedDiscounts = savedDiscounts.filter(d => d.brand !== brand);
+
+                savedDiscounts.push({
+                        brand: brand,
+                        amount: amount,
+                        label: label || brand
+                });
+
+                localStorage.setItem('fuelDiscounts', JSON.stringify(savedDiscounts));
+                renderSavedDiscounts();
+                updateRankedList();
+
+                // Clear form
+                document.getElementById('discountAmount').value = '5';
+                document.getElementById('discountLabel').value = '';
+        }
+
+        function deleteDiscount(brand) {
+                savedDiscounts = savedDiscounts.filter(d => d.brand !== brand);
+                localStorage.setItem('fuelDiscounts', JSON.stringify(savedDiscounts));
+                renderSavedDiscounts();
+                updateRankedList();
+        }
+
+        function renderSavedDiscounts() {
+                const container = document.getElementById('savedDiscountsList');
+                container.innerHTML = '';
+
+                if (savedDiscounts.length === 0) {
+                        container.innerHTML = `<div class="text-xs text-zinc-500 px-2">No discounts saved yet.</div>`;
+                        return;
+                }
+
+                savedDiscounts.forEach(discount => {
+                        const div = document.createElement('div');
+                        div.className = `flex justify-between items-center bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-2 text-sm`;
+
+                        div.innerHTML = `
+                                <div>
+                                        <span class="font-medium">${discount.brand}</span>
+                                        <span class="text-emerald-400 ml-2">−${discount.amount}¢</span>
+                                        ${discount.label !== discount.brand ? 
+                                                `<span class="text-xs text-zinc-400 ml-2">(${discount.label})</span>` : ''}
+                                </div>
+                                <button onclick="deleteDiscount('${discount.brand}')" 
+                                        class="text-red-400 hover:text-red-500 text-xs px-3 py-1">Remove</button>
+                        `;
+                        container.appendChild(div);
+                });
+        }
+
+        function getDiscountForBrand(brand) {
+                return savedDiscounts.find(d => d.brand === brand);
         }
 
         function getEffectivePrice(station, fuelType) {
-            const basePrice = station.prices[fuelType] || 180;
-            
-            if (currentDiscount.brand && station.brand === currentDiscount.brand) {
-                return Math.max(basePrice - currentDiscount.amount, 0);
-            }
-            return basePrice;
+                const basePrice = station.prices[fuelType] || 180;
+                const discount = getDiscountForBrand(station.brand);
+
+                if (discount) {
+                        return Math.max(basePrice - discount.amount, 0);
+                }
+                return basePrice;
+        }
+
+        // ==================== DYNAMIC BRAND DROPDOWN ====================
+        function populateBrandDropdown() {
+                const select = document.getElementById('discountBrand');
+                const visibleStations = getVisibleStations();
+
+                const brands = [...new Set(visibleStations.map(s => s.brand))].sort();
+
+                select.innerHTML = '<option value="">Select brand...</option>';
+
+                brands.forEach(brand => {
+                        const option = document.createElement('option');
+                        option.value = brand;
+                        option.textContent = brand;
+                        select.appendChild(option);
+                });
+        }
+
+        function updateDiscountUI() {
+                populateBrandDropdown();
         }
 
         // ==================== VISIBLE STATIONS ====================
@@ -339,12 +427,17 @@
             initMap();
             await loadFuelData();
 
-            // Set initial discount values
-            document.getElementById('discountAmount').addEventListener('input', updateDiscount);
-            document.getElementById('fuelType').addEventListener('change', updateRankedList);
-            document.getElementById('discountBrand').addEventListener('change', updateDiscount);
+            // Load saved discounts from browser
+            loadSavedDiscounts();
 
-            // Initial list update
+            // Update brand dropdown when user moves or zooms the map
+            map.on('moveend', updateDiscountUI);
+            map.on('zoomend', updateDiscountUI);
+
+            // Populate the brand dropdown shortly after loading
+            setTimeout(updateDiscountUI, 800);
+
+            // Initial ranked list update
             setTimeout(updateRankedList, 500);
         }
 
