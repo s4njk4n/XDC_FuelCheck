@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#166534">
+    <meta name="theme-color" content="#0A0A0A">
     <title>XDC FuelCheck • NSW</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -29,6 +29,20 @@
             background-color: #27251f;
         }
         
+        .xdc-accent {
+            color: #00E5FF;
+        }
+        
+        .xdc-button {
+            background-color: #00E5FF;
+            color: black;
+            font-weight: 600;
+        }
+        
+        .xdc-button:hover {
+            background-color: #00C4D9;
+        }
+        
         @media (max-width: 768px) {
             .map-container { height: 380px !important; }
         }
@@ -36,14 +50,25 @@
 </head>
 <body class="bg-zinc-950 text-zinc-200">
     <div class="max-w-5xl mx-auto px-4">
+        
         <!-- Header -->
-        <div class="pt-6 pb-4 flex items-center justify-between">
-            <div>
-                <h1 class="text-3xl font-semibold title-font tracking-tighter">XDC FuelCheck</h1>
-                <p class="text-zinc-400 text-sm">NSW Fuel Prices • With Your Discounts</p>
-            </div>
-            <div id="lastUpdated" class="text-xs px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400">
-                Loading data...
+        <div class="pt-6 pb-5">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                
+                <!-- Logo + Title -->
+                <div class="flex items-center gap-3">
+                    <img src="XDC_Network_Blk_Mono_Logo.jpeg" alt="XDC Network" class="h-10 w-auto">
+                    <div>
+                        <h1 class="text-3xl font-semibold title-font tracking-tighter">XDC FuelCheck</h1>
+                        <p class="text-sm text-zinc-400 -mt-1">NSW Fuel Pricing</p>
+                    </div>
+                </div>
+
+                <!-- Last Updated -->
+                <div id="lastUpdated" 
+                     class="text-xs px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 self-start md:self-center">
+                    Loading data...
+                </div>
             </div>
         </div>
 
@@ -108,7 +133,7 @@
                 </div>
             </div>
         
-            <button onclick="saveDiscount()" class="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-6 py-3 rounded-2xl text-sm">
+            <button onclick="saveDiscount()" class="mt-4 xdc-button px-6 py-3 rounded-2xl text-sm">
                 Save Discount for this Brand
             </button>
         
@@ -238,25 +263,21 @@
             }
         }
 
-        // ==================== CRYPTO PRICES (Bitrue + CoinGecko) ====================
+        // ==================== CRYPTO PRICES ====================
         async function loadCryptoPrices() {
             try {
-                // 1. Get XDC/USDT from Bitrue
                 const bitrueRes = await fetch('https://openapi.bitrue.com/api/v1/ticker/price?symbol=XDCUSDT');
                 const bitrueData = await bitrueRes.json();
                 const xdcUsdt = parseFloat(bitrueData.price);
 
-                // 2. Get USDT/AUD from CoinGecko
                 const geckoRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=aud');
                 const geckoData = await geckoRes.json();
                 const usdtAud = geckoData.tether?.aud || 1.52;
 
-                // 3. Calculate XDC in AUD
                 cryptoPrices.XDC = xdcUsdt * usdtAud;
                 cryptoPrices.USDC = usdtAud;
 
                 console.log('Live crypto prices loaded:', cryptoPrices);
-
             } catch (e) {
                 console.warn('Failed to fetch live crypto prices. Using fallback.');
                 cryptoPrices.XDC = 0.045;
@@ -266,9 +287,7 @@
 
         function convertToCrypto(centPrice, currency) {
             if (!centPrice || centPrice <= 0) return null;
-
             const audPrice = centPrice / 100;
-
             if (currency === 'XDC' && cryptoPrices.XDC > 0) {
                 return (audPrice / cryptoPrices.XDC).toFixed(2);
             }
