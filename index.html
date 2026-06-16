@@ -148,7 +148,7 @@
         let map;
         let markers = [];
         let savedDiscounts = [];
-        let cryptoPrices = { XDC: 0, USDC: 0 }; // in AUD
+        let cryptoPrices = { XDC: 0, USDC: 0 };
 
         // ==================== MAP ====================
         function initMap() {
@@ -225,7 +225,13 @@
             } catch (error) {
                 console.error('Failed to load fuel data:', error);
                 document.getElementById('lastUpdated').textContent = 'Using sample data';
-                allStations = [ /* sample data */ ];
+
+                allStations = [
+                    { id: 1, brand: "7-Eleven", name: "Sydney CBD", lat: -33.8688, lng: 151.2093, prices: { U91: 179.9, E10: 177.9, Diesel: 199.9, P95: 199.9, P98: 209.9 } },
+                    { id: 2, brand: "Shell", name: "Parramatta", lat: -33.8151, lng: 151.0034, prices: { U91: 181.9, E10: 179.9, Diesel: 195.9, P95: 201.9, P98: 211.9 } },
+                    { id: 3, brand: "BP", name: "Chatswood", lat: -33.7969, lng: 151.1833, prices: { U91: 178.9, E10: 176.9, Diesel: 194.9, P95: 198.9, P98: 208.9 } }
+                ];
+
                 const visibleStations = getVisibleStations();
                 addMarkers(visibleStations);
                 updateRankedList();
@@ -233,15 +239,13 @@
         }
 
         // ==================== CRYPTO PRICES ====================
-        let cryptoPrices = { XDC: 0, USDC: 0 };
-
         async function loadCryptoPrices() {
             try {
                 const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=xdc-network,usd-coin&vs_currencies=aud');
                 const data = await res.json();
 
-                cryptoPrices.XDC = data['xdc-network']?.aud || 0.12;   // fallback
-                cryptoPrices.USDC = data['usd-coin']?.aud || 1.52;     // fallback
+                cryptoPrices.XDC = data['xdc-network']?.aud || 0.12;
+                cryptoPrices.USDC = data['usd-coin']?.aud || 1.52;
 
                 console.log('Crypto prices loaded:', cryptoPrices);
             } catch (e) {
@@ -275,7 +279,10 @@
             const amount = parseFloat(document.getElementById('discountAmount').value);
             const label = document.getElementById('discountLabel').value.trim();
 
-            if (!brand || !amount || amount <= 0) return alert("Please enter a valid discount.");
+            if (!brand || !amount || amount <= 0) {
+                alert("Please enter a valid discount amount.");
+                return;
+            }
 
             savedDiscounts = savedDiscounts.filter(d => d.brand !== brand);
             savedDiscounts.push({ brand, amount, label: label || brand });
@@ -358,15 +365,13 @@
             const displayCurrency = document.getElementById('displayCurrency').value;
             const visibleStations = getVisibleStations();
 
-            document.getElementById('visibleCount').textContent = 
-                `${visibleStations.length} stations visible`;
+            document.getElementById('visibleCount').textContent = `${visibleStations.length} stations visible`;
 
             if (visibleStations.length === 0) {
                 container.innerHTML = `<div class="p-6 text-center text-zinc-400">No stations visible in current map area.</div>`;
                 return;
             }
 
-            // Sort stations by effective price (cheapest first)
             const sorted = [...visibleStations].sort((a, b) => {
                 return getEffectivePrice(a, fuelType) - getEffectivePrice(b, fuelType);
             });
@@ -379,7 +384,6 @@
                 const discount = getDiscountForBrand(station.brand);
                 const cryptoValue = convertToCrypto(effectiveAUD, displayCurrency);
 
-                // Create the row element
                 const div = document.createElement('div');
                 div.className = `station-row px-5 py-4 flex justify-between items-center border-b border-zinc-800 last:border-b-0 cursor-pointer`;
 
@@ -412,7 +416,6 @@
                     <div class="text-right">${priceHTML}</div>
                 `;
 
-                // Click to fly to station on map
                 div.onclick = () => {
                     map.flyTo([station.lat, station.lng], 15, { duration: 0.8 });
                 };
