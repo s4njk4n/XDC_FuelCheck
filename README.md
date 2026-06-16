@@ -1,6 +1,6 @@
 # XDC FuelCheck NSW
 
-**Real-time NSW fuel prices with your personal discounts — now with XDC and stablecoin pricing.**
+**Real-time NSW fuel prices with your personal discounts**
 
 XDC FuelCheck is a simple tool that shows you the cheapest fuel prices near you in New South Wales, based on official government data. You can add your own discounts (like NRMA, work fuel cards, or loyalty programs) and even see what the price would be if you paid in **XDC** or **USDC** (on the XDC Network).
 
