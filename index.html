@@ -290,7 +290,7 @@
                 const tokenUrl = 'https://api.onegov.nsw.gov.au/oauth/client_credential/accesstoken?grant_type=client_credentials';
                 const tokenProxyUrl = `https://corsproxy.io/?${encodeURIComponent(tokenUrl)}`;
 
-                console.log('Requesting token...');
+                console.log('Requesting OAuth token...');
 
                 const tokenResponse = await fetch(tokenProxyUrl, {
                     method: 'POST',
@@ -300,24 +300,33 @@
                     }
                 });
 
+                // Read response as text first (safer)
+                const tokenText = await tokenResponse.text();
+                console.log('Token raw response:', tokenText);
+
                 if (!tokenResponse.ok) {
-                    const errorText = await tokenResponse.text();
-                    console.error('Token request failed:', tokenResponse.status, errorText);
-                    throw new Error(`Token failed with status ${tokenResponse.status}`);
+                    throw new Error(`Token request failed with status ${tokenResponse.status}`);
                 }
 
-                const tokenData = await tokenResponse.json();
-                console.log('Token response:', tokenData);
+                let tokenData;
+                try {
+                    tokenData = JSON.parse(tokenText);
+                } catch (e) {
+                    throw new Error('Token response was not valid JSON');
+                }
 
                 const accessToken = tokenData.access_token;
 
                 if (!accessToken) {
-                    throw new Error('No access_token in response');
+                    console.error('Full token response:', tokenData);
+                    throw new Error('No access_token received from API');
                 }
+
+                console.log('Token obtained successfully');
 
                 // === Step 2: Fetch Prices ===
                 status.textContent = 'Loading live NSW data...';
-                
+
                 const pricesUrl = 'https://api.onegov.nsw.gov.au/FuelPriceCheck/v1/fuel/prices';
                 const pricesProxyUrl = `https://corsproxy.io/?${encodeURIComponent(pricesUrl)}`;
 
