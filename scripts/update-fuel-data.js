@@ -28,7 +28,7 @@ async function getAccessToken() {
     const response = await fetch(
         'https://api.onegov.nsw.gov.au/oauth/client_credential/accesstoken?grant_type=client_credentials',
         {
-            method: 'GET',                    // ← Changed from POST to GET
+            method: 'GET',
             headers: {
                 'Authorization': `Basic ${basicAuth}`,
                 'Accept': 'application/json'
@@ -37,28 +37,13 @@ async function getAccessToken() {
     );
 
     const text = await response.text();
-    console.log('Token Status:', response.status);
-    console.log('Token Raw Body Length:', text.length);
-    console.log('Token Raw Body:', text || '(empty)');
 
-    if (!response.ok) {
-        throw new Error(`Token request failed with status ${response.status}`);
+    if (!response.ok || !text) {
+        throw new Error(`Token request failed`);
     }
 
-    if (!text || text.trim() === '') {
-        throw new Error('Token response was empty');
-    }
-
-    try {
-        const data = JSON.parse(text);
-        if (!data.access_token) {
-            throw new Error('No access_token found in response');
-        }
-        return data.access_token;
-    } catch (e) {
-        console.error('Failed to parse token JSON. Raw response:', text);
-        throw new Error('Token response was not valid JSON');
-    }
+    const data = JSON.parse(text);
+    return data.access_token;
 }
 
 async function fetchAllFuelPrices(token) {
@@ -79,47 +64,33 @@ async function fetchAllFuelPrices(token) {
         }
     );
 
-    const text = await response.text();
-    console.log('Prices Status:', response.status);
-
     if (!response.ok) {
-        console.error('Prices Error Response:', text);
         throw new Error(`Failed to fetch prices: ${response.status}`);
     }
 
-    return JSON.parse(text);
+    return await response.json();
 }
 
 async function main() {
     try {
         if (!API_KEY || !API_SECRET) {
-            throw new Error('Missing API_KEY or API_SECRET environment variables');
+            throw new Error('Missing API credentials');
         }
 
-        console.log('Requesting access token...');
         const token = await getAccessToken();
-        console.log('Token obtained successfully');
-
-        console.log('Fetching all fuel prices...');
         const data = await fetchAllFuelPrices(token);
 
-        const prices = data.prices || [];
-        const stations = data.stations || [];
-
-        console.log(`Received ${prices.length} prices and ${stations.length} stations`);
-
-        // Merge prices with station info if needed
         const outputData = {
             lastUpdated: new Date().toISOString(),
-            stations: stations,
-            prices: prices
+            stations: data.stations || [],
+            prices: data.prices || []
         };
 
         const outputPath = path.join(__dirname, '../data/fuel-prices.json');
         fs.mkdirSync(path.dirname(outputPath), { recursive: true });
         fs.writeFileSync(outputPath, JSON.stringify(outputData, null, 2));
 
-        console.log('Successfully saved fuel data');
+        console.log(`Successfully saved ${outputData.prices.length} prices`);
     } catch (error) {
         console.error('Error:', error.message);
         process.exit(1);
