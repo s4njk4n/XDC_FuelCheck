@@ -99,7 +99,7 @@
         <!-- Fuel Type Selector -->
         <div class="mb-4">
             <label class="block text-sm font-medium text-zinc-400 mb-1.5">Fuel Type</label>
-            <select id="fuelType" onchange="updateRankedList()"
+            <select id="fuelType" onchange="saveFuelType(); updateRankedList()"
                     class="w-full md:w-64 bg-zinc-900 border border-zinc-700 rounded-2xl px-4 py-3 text-sm">
                 <option value="U91">U91 (Unleaded 91)</option>
                 <option value="E10">E10</option>
@@ -322,14 +322,42 @@
 
         // ==================== MAP ====================
         function initMap() {
+            // Default view
+            let lat = -33.8688;
+            let lng = 151.2093;
+            let zoom = 10;
+
+            // Restore last map position if available
+            const savedMap = localStorage.getItem('mapState');
+            if (savedMap) {
+                const state = JSON.parse(savedMap);
+                lat = state.lat;
+                lng = state.lng;
+                zoom = state.zoom;
+            }
+
             map = L.map('map', {
                 zoomControl: true,
                 attributionControl: false
-            }).setView([-33.8688, 151.2093], 10);
+            }).setView([lat, lng], zoom);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+            // Save map position when user moves or zooms
+            map.on('moveend', saveMapState);
+            map.on('zoomend', saveMapState);
             map.on('moveend', updateRankedList);
             map.on('zoomend', updateRankedList);
+        }
+
+        function saveMapState() {
+            const center = map.getCenter();
+            const zoom = map.getZoom();
+            localStorage.setItem('mapState', JSON.stringify({
+                lat: center.lat,
+                lng: center.lng,
+                zoom: zoom
+            }));
         }
 
         function addMarkers(stationsToShow) {
@@ -593,12 +621,25 @@
             });
         }
 
+        // ==================== FUEL TYPE PERSISTENCE ====================
+        function saveFuelType() {
+            const fuelType = document.getElementById('fuelType').value;
+            localStorage.setItem('lastFuelType', fuelType);
+        }
+
         // ==================== INITIALIZATION ====================
         async function initializeApp() {
             initMap();
             await loadFuelData();
             await loadCryptoPrices();
             loadSavedDiscounts();
+
+            // Restore last selected fuel type
+            const savedFuelType = localStorage.getItem('lastFuelType');
+            if (savedFuelType) {
+                document.getElementById('fuelType').value = savedFuelType;
+            }
+
             map.on('moveend', updateDiscountUI);
             map.on('zoomend', updateDiscountUI);
             setTimeout(updateDiscountUI, 800);
