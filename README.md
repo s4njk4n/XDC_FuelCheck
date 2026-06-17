@@ -21,7 +21,7 @@ It’s designed to be simple and useful for everyday drivers.
 ## How to Use It
 
 1. **Open the site**  
-   Go to: [https://s4njk4n.github.io/XDC_FuelSharpNSW/](https://s4njk4n.github.io/XDC_FuelFinderNSW/)
+   Go to: [https://s4njk4n.github.io/XDC_FuelSharpNSW/](https://s4njk4n.github.io/XDC_FuelSharpNSW/)
 
 2. **Choose your fuel type**  
    Select U91, E10, Diesel, P95, or P98 at the top.
