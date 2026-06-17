@@ -40,6 +40,14 @@
         @media (max-width: 768px) {
             .map-container { height: 380px !important; }
         }
+
+        .modal {
+            animation: fadeInScale 0.2s ease-out forwards;
+        }
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
     </style>
 </head>
 <body class="bg-zinc-950 text-zinc-200">
@@ -68,7 +76,7 @@
                     </a>
 
                     <!-- Install App Button -->
-                    <button id="installBtn" 
+                    <button id="installBtn"
                             class="hidden text-xs px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white transition-colors">
                         Install App
                     </button>
@@ -91,7 +99,7 @@
         <!-- Fuel Type Selector -->
         <div class="mb-4">
             <label class="block text-sm font-medium text-zinc-400 mb-1.5">Fuel Type</label>
-            <select id="fuelType" onchange="updateRankedList()"
+            <select id="fuelType" onchange="saveFuelType(); updateRankedList()"
                     class="w-full md:w-64 bg-zinc-900 border border-zinc-700 rounded-2xl px-4 py-3 text-sm">
                 <option value="U91">U91 (Unleaded 91)</option>
                 <option value="E10">E10</option>
@@ -182,9 +190,8 @@
                 Built by <a href="https://xdcoutpost.xyz" target="_blank" class="hover:text-zinc-300 font-medium">XDC Outpost</a>
             </div>
             
-            <!-- Social Icons (X, GitHub, Telegram, Discord) -->
-            <div class="flex justify-center gap-6 text-zinc-400">
-                
+            <!-- Social Icons -->
+            <div class="flex justify-center gap-6 text-zinc-400 mb-4">
                 <!-- X -->
                 <a href="https://x.com/s4njk4n" target="_blank" class="hover:text-white transition-colors" aria-label="X">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -213,39 +220,98 @@
                     </svg>
                 </a>
             </div>
+
+            <!-- Hit Counter -->
+            <div class="mt-4 flex justify-center">
+                <a href="https://www.hitwebcounter.com/" target="_blank" rel="noopener">
+                    <img src="https://www.hitwebcounter.com/counter/counter.php?page=21504416&amp;style=0024&amp;nbdigits=9&amp;type=page" 
+                         alt="Web Counter" 
+                         style="border:0; max-width:100%; height:auto; opacity:0.7;" />
+                </a>
+            </div>
         </div>
 
+    </div>
+
+    <!-- iOS Install Modal -->
+    <div id="iosModal" 
+         class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[9999] p-4">
+        
+        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl max-w-md w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-semibold">Install FuelSharp NSW</h3>
+                <button onclick="closeIOSModal()" 
+                        class="text-zinc-400 hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+            
+            <div class="space-y-4 text-sm text-zinc-300">
+                <p>To install this app on your iPhone or iPad:</p>
+                
+                <ol class="list-decimal list-inside space-y-2 pl-1">
+                    <li>Tap the <strong>Share</strong> button at the bottom of Safari.</li>
+                    <li>Scroll down and tap <strong>Add to Home Screen</strong>.</li>
+                    <li>Tap <strong>Add</strong> in the top right corner.</li>
+                </ol>
+                
+                <p class="text-xs text-zinc-500 mt-4">
+                    Once installed, the app will appear on your home screen with its own icon.
+                </p>
+            </div>
+            
+            <button onclick="closeIOSModal()" 
+                    class="mt-6 w-full bg-zinc-700 hover:bg-zinc-600 text-white py-3 rounded-2xl text-sm font-medium">
+                Got it
+            </button>
+        </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // ==================== PWA INSTALL BUTTON ====================
+        // ==================== PWA INSTALL LOGIC ====================
         let deferredPrompt;
+        const installBtn = document.getElementById('installBtn');
+        const iosModal = document.getElementById('iosModal');
+
+        function isIOS() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        }
+
+        function isInStandaloneMode() {
+            return (window.matchMedia('(display-mode: standalone)').matches) || 
+                   (window.navigator.standalone === true);
+        }
+
+        if (!isInStandaloneMode()) {
+            installBtn.classList.remove('hidden');
+            installBtn.classList.add('inline-block');
+        }
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            const installBtn = document.getElementById('installBtn');
-            installBtn.classList.remove('hidden');
-            installBtn.classList.add('inline-block');
-        });
-
-        document.getElementById('installBtn').addEventListener('click', async () => {
-            if (!deferredPrompt) return;
-
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            
-            if (outcome === 'accepted') {
-                console.log('User accepted the install prompt');
-            } else {
-                console.log('User dismissed the install prompt');
+            if (!isIOS()) {
+                installBtn.classList.remove('hidden');
+                installBtn.classList.add('inline-block');
             }
-            
-            deferredPrompt = null;
-            document.getElementById('installBtn').classList.add('hidden');
         });
+
+        installBtn.addEventListener('click', async () => {
+            if (isIOS()) {
+                iosModal.classList.remove('hidden');
+                iosModal.classList.add('flex');
+            } else if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                installBtn.classList.add('hidden');
+            }
+        });
+
+        function closeIOSModal() {
+            iosModal.classList.remove('flex');
+            iosModal.classList.add('hidden');
+        }
 
         // ==================== STATE ====================
         let allStations = [];
@@ -256,15 +322,42 @@
 
         // ==================== MAP ====================
         function initMap() {
+            // Default view
+            let lat = -33.8688;
+            let lng = 151.2093;
+            let zoom = 10;
+
+            // Restore last map position if available
+            const savedMap = localStorage.getItem('mapState');
+            if (savedMap) {
+                const state = JSON.parse(savedMap);
+                lat = state.lat;
+                lng = state.lng;
+                zoom = state.zoom;
+            }
+
             map = L.map('map', {
                 zoomControl: true,
                 attributionControl: false
-            }).setView([-33.8688, 151.2093], 10);
+            }).setView([lat, lng], zoom);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
+            // Save map position when user moves or zooms
+            map.on('moveend', saveMapState);
+            map.on('zoomend', saveMapState);
             map.on('moveend', updateRankedList);
             map.on('zoomend', updateRankedList);
+        }
+
+        function saveMapState() {
+            const center = map.getCenter();
+            const zoom = map.getZoom();
+            localStorage.setItem('mapState', JSON.stringify({
+                lat: center.lat,
+                lng: center.lng,
+                zoom: zoom
+            }));
         }
 
         function addMarkers(stationsToShow) {
@@ -276,14 +369,11 @@
             });
         }
 
-        // ==================== DATA LOADING (Fixed Timestamp Logic) ====================
+        // ==================== DATA LOADING ====================
         async function loadFuelData(forceRefresh = false) {
             try {
                 let url = './data/fuel-prices.json';
-                
-                if (forceRefresh) {
-                    url += `?t=${Date.now()}`;
-                }
+                if (forceRefresh) url += `?t=${Date.now()}`;
 
                 const response = await fetch(url);
                 if (!response.ok) throw new Error('Data file not found');
@@ -324,13 +414,8 @@
 
                 if (data.lastUpdated) {
                     const date = new Date(data.lastUpdated);
-                    const timeString = date.toLocaleTimeString([], { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                    });
-                    document.getElementById('lastUpdated').textContent = `Updated: ${timeString}`;
-                } else {
-                    document.getElementById('lastUpdated').textContent = 'Data loaded';
+                    document.getElementById('lastUpdated').textContent = 
+                        `Updated: ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
                 }
 
                 const visibleStations = getVisibleStations();
@@ -353,18 +438,14 @@
             }
         }
 
-        // ==================== REFRESH PRICES ====================
         async function refreshPrices() {
             const lastUpdatedEl = document.getElementById('lastUpdated');
             lastUpdatedEl.textContent = 'Refreshing...';
-            
             try {
                 await loadFuelData(true);
             } catch (error) {
                 lastUpdatedEl.textContent = 'Failed to refresh';
-                setTimeout(() => {
-                    lastUpdatedEl.textContent = 'Updated: --:--';
-                }, 3000);
+                setTimeout(() => lastUpdatedEl.textContent = 'Updated: --:--', 3000);
             }
         }
 
@@ -381,10 +462,7 @@
 
                 cryptoPrices.XDC = xdcUsdt * usdtAud;
                 cryptoPrices.USDC = usdtAud;
-
-                console.log('Live crypto prices loaded:', cryptoPrices);
             } catch (e) {
-                console.warn('Failed to fetch live crypto prices. Using fallback.');
                 cryptoPrices.XDC = 0.045;
                 cryptoPrices.USDC = 1.52;
             }
@@ -393,12 +471,8 @@
         function convertToCrypto(centPrice, currency) {
             if (!centPrice || centPrice <= 0) return null;
             const audPrice = centPrice / 100;
-            if (currency === 'XDC' && cryptoPrices.XDC > 0) {
-                return (audPrice / cryptoPrices.XDC).toFixed(2);
-            }
-            if (currency === 'USDC' && cryptoPrices.USDC > 0) {
-                return (audPrice / cryptoPrices.USDC).toFixed(2);
-            }
+            if (currency === 'XDC' && cryptoPrices.XDC > 0) return (audPrice / cryptoPrices.XDC).toFixed(2);
+            if (currency === 'USDC' && cryptoPrices.USDC > 0) return (audPrice / cryptoPrices.USDC).toFixed(2);
             return null;
         }
 
@@ -486,7 +560,6 @@
             populateBrandDropdown();
         }
 
-        // ==================== VISIBLE STATIONS ====================
         function getVisibleStations() {
             if (!map) return allStations;
             const bounds = map.getBounds();
@@ -507,10 +580,7 @@
                 return;
             }
 
-            const sorted = [...visibleStations].sort((a, b) => {
-                return getEffectivePrice(a, fuelType) - getEffectivePrice(b, fuelType);
-            });
-
+            const sorted = [...visibleStations].sort((a, b) => getEffectivePrice(a, fuelType) - getEffectivePrice(b, fuelType));
             container.innerHTML = '';
 
             sorted.slice(0, 20).forEach((station, index) => {
@@ -529,13 +599,8 @@
                 `;
 
                 if (cryptoValue && displayCurrency !== 'AUD') {
-                    priceHTML += `
-                        <div class="text-emerald-400 text-xs mt-0.5">
-                            ≈ ${cryptoValue} ${displayCurrency}
-                        </div>
-                    `;
+                    priceHTML += `<div class="text-emerald-400 text-xs mt-0.5">≈ ${cryptoValue} ${displayCurrency}</div>`;
                 }
-
                 if (discount) {
                     priceHTML += `<div class="text-[10px] text-emerald-400 line-through">${originalAUD}¢ AUD</div>`;
                 }
@@ -551,12 +616,15 @@
                     <div class="text-right">${priceHTML}</div>
                 `;
 
-                div.onclick = () => {
-                    map.flyTo([station.lat, station.lng], 15, { duration: 0.8 });
-                };
-
+                div.onclick = () => map.flyTo([station.lat, station.lng], 15, { duration: 0.8 });
                 container.appendChild(div);
             });
+        }
+
+        // ==================== FUEL TYPE PERSISTENCE ====================
+        function saveFuelType() {
+            const fuelType = document.getElementById('fuelType').value;
+            localStorage.setItem('lastFuelType', fuelType);
         }
 
         // ==================== INITIALIZATION ====================
@@ -564,13 +632,17 @@
             initMap();
             await loadFuelData();
             await loadCryptoPrices();
-
             loadSavedDiscounts();
+
+            // Restore last selected fuel type
+            const savedFuelType = localStorage.getItem('lastFuelType');
+            if (savedFuelType) {
+                document.getElementById('fuelType').value = savedFuelType;
+            }
 
             map.on('moveend', updateDiscountUI);
             map.on('zoomend', updateDiscountUI);
             setTimeout(updateDiscountUI, 800);
-
             setTimeout(updateRankedList, 500);
         }
 
