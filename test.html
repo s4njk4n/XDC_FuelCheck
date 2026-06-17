@@ -218,21 +218,28 @@
     </div>
 
     <!-- iOS Install Modal -->
-    <div id="iosModal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+    <div id="iosModal" 
+         class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[9999] p-4">
+        
         <div class="bg-zinc-900 border border-zinc-700 rounded-3xl max-w-md w-full p-6">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-semibold">Install FuelSharp NSW</h3>
-                <button onclick="closeIOSModal()" class="text-zinc-400 hover:text-white text-2xl leading-none">&times;</button>
+                <button onclick="closeIOSModal()" 
+                        class="text-zinc-400 hover:text-white text-2xl leading-none">&times;</button>
             </div>
             
             <div class="space-y-4 text-sm text-zinc-300">
                 <p>To install this app on your iPhone or iPad:</p>
+                
                 <ol class="list-decimal list-inside space-y-2 pl-1">
                     <li>Tap the <strong>Share</strong> button at the bottom of Safari.</li>
                     <li>Scroll down and tap <strong>Add to Home Screen</strong>.</li>
                     <li>Tap <strong>Add</strong> in the top right corner.</li>
                 </ol>
-                <p class="text-xs text-zinc-500 mt-4">The app will appear on your home screen with its own icon.</p>
+                
+                <p class="text-xs text-zinc-500 mt-4">
+                    Once installed, the app will appear on your home screen with its own icon.
+                </p>
             </div>
             
             <button onclick="closeIOSModal()" 
