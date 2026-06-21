@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-06-21T15:43:32.577Z",
+  "lastUpdated": "2026-06-21T17:15:25.217Z",
   "stations": [
     {
       "brandid": "1-GFYV-11",
@@ -88519,8 +88519,8 @@
     {
       "stationcode": "18666",
       "fueltype": "DL",
-      "price": 165.5,
-      "lastupdated": "20/06/2026 04:07:29"
+      "price": 179.9,
+      "lastupdated": "21/06/2026 15:53:18"
     },
     {
       "stationcode": "18666",
@@ -96565,8 +96565,8 @@
     {
       "stationcode": "20100",
       "fueltype": "P98",
-      "price": 187.9,
-      "lastupdated": "21/06/2026 12:10:34"
+      "price": 167.2,
+      "lastupdated": "21/06/2026 16:23:13"
     },
     {
       "stationcode": "20100",
