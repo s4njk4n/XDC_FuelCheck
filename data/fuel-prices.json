@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-06-26T16:05:39.264Z",
+  "lastUpdated": "2026-06-26T18:20:41.865Z",
   "stations": [
     {
       "brandid": "1-GFYV-11",
@@ -60940,8 +60940,8 @@
     {
       "stationcode": "1112",
       "fueltype": "PDL",
-      "price": 175.9,
-      "lastupdated": "25/06/2026 03:42:49"
+      "price": 173.9,
+      "lastupdated": "26/06/2026 17:53:02"
     },
     {
       "stationcode": "1112",
@@ -106048,32 +106048,32 @@
     {
       "stationcode": "20874",
       "fueltype": "E10",
-      "price": 154.5,
-      "lastupdated": "26/06/2026 01:52:38"
+      "price": 153.5,
+      "lastupdated": "26/06/2026 16:31:25"
     },
     {
       "stationcode": "20874",
       "fueltype": "P95",
-      "price": 169.5,
-      "lastupdated": "26/06/2026 01:52:38"
+      "price": 167.5,
+      "lastupdated": "26/06/2026 16:31:25"
     },
     {
       "stationcode": "20874",
       "fueltype": "P98",
-      "price": 177.5,
-      "lastupdated": "26/06/2026 01:52:38"
+      "price": 175.5,
+      "lastupdated": "26/06/2026 16:31:25"
     },
     {
       "stationcode": "20874",
       "fueltype": "PDL",
-      "price": 174.5,
-      "lastupdated": "24/06/2026 12:18:10"
+      "price": 173.5,
+      "lastupdated": "26/06/2026 16:31:25"
     },
     {
       "stationcode": "20874",
       "fueltype": "U91",
-      "price": 156.5,
-      "lastupdated": "26/06/2026 01:52:38"
+      "price": 155.5,
+      "lastupdated": "26/06/2026 16:31:25"
     },
     {
       "stationcode": "20875",
